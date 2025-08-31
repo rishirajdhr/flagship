@@ -3,6 +3,7 @@ package com.rishirajdhr.flagship.flag;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Encapsulates business logic for feature flags.
@@ -40,5 +41,15 @@ public class FlagService {
    */
   public List<Flag> getAllFlags() {
     return repository.findAll();
+  }
+
+  /**
+   * Get a feature flag by its name.
+   *
+   * @param name the name of the flag
+   * @return an {@link Optional} containing the flag if it exists
+   */
+  public Optional<Flag> getFlagByName(String name) {
+    return repository.findFlagByName(name);
   }
 }

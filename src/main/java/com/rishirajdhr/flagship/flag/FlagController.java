@@ -1,6 +1,9 @@
 package com.rishirajdhr.flagship.flag;
 
+import com.rishirajdhr.flagship.flag.exceptions.FlagNotFoundException;
+
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,5 +47,19 @@ public class FlagController {
   @GetMapping
   public List<Flag> getAllFlags() {
     return service.getAllFlags();
+  }
+
+  /**
+   * Get a feature flag by its name.
+   *
+   * @param name the name of the feature flag
+   * @return the {@link Flag} with the given name
+   * @throws RuntimeException if no flag with the given name exists
+   */
+  @GetMapping("/{name}")
+  public Flag getFlagByName(@PathVariable String name) throws RuntimeException {
+    return service
+        .getFlagByName(name)
+        .orElseThrow(() -> new FlagNotFoundException(name));
   }
 }
