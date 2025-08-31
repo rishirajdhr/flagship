@@ -1,5 +1,7 @@
 package com.rishirajdhr.flagship.flag;
 
+import com.rishirajdhr.flagship.flag.exceptions.FlagNotFoundException;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -51,5 +53,27 @@ public class FlagService {
    */
   public Optional<Flag> getFlagByName(String name) {
     return repository.findFlagByName(name);
+  }
+
+  /**
+   * Update an existing feature flag by its name.
+   *
+   * @param name the name of the flag
+   * @param updateFlag the {@link UpdateFlag} payload with the updated data
+   * @return the updated feature flag
+   * @throws FlagNotFoundException if no flag exists with the given name
+   */
+  public Flag updateFlagByName(String name, UpdateFlag updateFlag) throws FlagNotFoundException {
+    Flag flag = getFlagByName(name).orElseThrow(() -> new FlagNotFoundException(name));
+
+    if (updateFlag.description() != null) {
+      flag.setDescription(updateFlag.description());
+    }
+
+    if (updateFlag.enabled() != null) {
+      flag.setEnabled(updateFlag.enabled());
+    }
+
+    return repository.save(flag);
   }
 }

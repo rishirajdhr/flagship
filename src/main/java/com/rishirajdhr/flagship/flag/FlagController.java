@@ -5,6 +5,7 @@ import com.rishirajdhr.flagship.flag.exceptions.FlagNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -61,5 +62,17 @@ public class FlagController {
     return service
         .getFlagByName(name)
         .orElseThrow(() -> new FlagNotFoundException(name));
+  }
+
+  /**
+   * Update a feature flag by its name.
+   *
+   * @param name the name of the feature flag
+   * @param updateFlag the {@link UpdateFlag} payload with the updated data
+   * @return the updated feature flag
+   */
+  @PutMapping("/{name}")
+  public Flag updateFlagByName(@PathVariable String name, @RequestBody UpdateFlag updateFlag) {
+    return service.updateFlagByName(name, updateFlag);
   }
 }
