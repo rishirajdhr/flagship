@@ -50,6 +50,33 @@ public class Flag {
   }
 
   /**
+   * Get the ID of the feature flag.
+   *
+   * @return the feature flag's ID
+   */
+  public Long getId() {
+    return id;
+  }
+
+  /**
+   * Get the timestamp when this feature flag was created.
+   *
+   * @return the {@link Instant} representing the creation time
+   */
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  /**
+   * Get the timestamp when this feature flag was last updated.
+   *
+   * @return the {@link Instant} representing the latest modification time
+   */
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  /**
    * Get the name of the feature flag.
    *
    * @return the feature flag's name
