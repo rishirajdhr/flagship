@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 /**
  * Exposes REST endpoints to access {@link Flag} entities.
  */
@@ -86,5 +88,16 @@ public class FlagController {
   @DeleteMapping("/{name}")
   public Flag deleteFlagByName(@PathVariable String name) {
     return service.deleteFlagByName(name);
+  }
+
+  /**
+   * Evaluate a feature flag's state.
+   *
+   * @param evaluateFlag the flag evaluation context
+   * @return the evaluated flag state
+   */
+  @PostMapping("/evaluate")
+  public FlagState evaluateFlag(@RequestBody @Valid EvaluateFlag evaluateFlag) {
+    return service.evaluateFlagState(evaluateFlag);
   }
 }

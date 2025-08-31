@@ -89,4 +89,17 @@ public class FlagService {
     repository.delete(flag);
     return flag;
   }
+
+  /**
+   * Evaluate a feature flag's state.
+   *
+   * @param evaluateFlag the flag evaluation context
+   * @return the evaluated flag state
+   * @throws FlagNotFoundException if no flag found for the provided context
+   */
+  public FlagState evaluateFlagState(EvaluateFlag evaluateFlag) throws FlagNotFoundException {
+    String name = evaluateFlag.flag();
+    Flag flag = getFlagByName(name).orElseThrow(() -> new FlagNotFoundException(name));
+    return new FlagState(flag.getName(), flag.isEnabled());
+  }
 }
