@@ -2,6 +2,7 @@ package com.rishirajdhr.flagship.flag;
 
 import com.rishirajdhr.flagship.flag.exceptions.FlagNotFoundException;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,5 +75,16 @@ public class FlagController {
   @PutMapping("/{name}")
   public Flag updateFlagByName(@PathVariable String name, @RequestBody UpdateFlag updateFlag) {
     return service.updateFlagByName(name, updateFlag);
+  }
+
+  /**
+   * Delete a feature flag by its name.
+   *
+   * @param name the name of the feature flag
+   * @return the deleted feature flag
+   */
+  @DeleteMapping("/{name}")
+  public Flag deleteFlagByName(@PathVariable String name) {
+    return service.deleteFlagByName(name);
   }
 }

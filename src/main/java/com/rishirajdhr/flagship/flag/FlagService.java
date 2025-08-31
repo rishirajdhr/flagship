@@ -76,4 +76,17 @@ public class FlagService {
 
     return repository.save(flag);
   }
+
+  /**
+   * Delete a feature flag by its name.
+   *
+   * @param name the name of the flag
+   * @return the deleted feature flag
+   * @throws FlagNotFoundException if no flag is found with the given name
+   */
+  public Flag deleteFlagByName(String name) throws FlagNotFoundException {
+    Flag flag = getFlagByName(name).orElseThrow(() -> new FlagNotFoundException(name));
+    repository.delete(flag);
+    return flag;
+  }
 }
