@@ -8,6 +8,8 @@ import com.rishirajdhr.flagship.project.exceptions.DuplicateProjectException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Encapsulates business logic for projects.
  */
@@ -47,5 +49,17 @@ public class ProjectService {
     } catch (DataIntegrityViolationException e) {
       throw new DuplicateProjectException(name);
     }
+  }
+
+  /**
+   * Get the projects owned by the currently logged-in user.
+   *
+   * @return a list of the currently logged-in user's projects
+   */
+  public List<Project> getAllProjectsForUser() {
+    AppUser owner = appUserProvider.getLoggedInAppUser();
+    if (owner == null) throw new UnauthenticatedException();
+
+    return projectRepository.findAllByOwner(owner);
   }
 }
