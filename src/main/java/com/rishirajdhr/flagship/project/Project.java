@@ -14,6 +14,8 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -21,6 +23,7 @@ import jakarta.validation.constraints.NotNull;
  * Represents a project for which feature flags can be configured.
  */
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"name", "owner_id" }))
 @EntityListeners(AuditingEntityListener.class)
 public class Project {
 

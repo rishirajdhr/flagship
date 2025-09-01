@@ -3,7 +3,9 @@ package com.rishirajdhr.flagship.project;
 import com.rishirajdhr.flagship.auth.AppUser;
 import com.rishirajdhr.flagship.auth.AppUserProvider;
 import com.rishirajdhr.flagship.auth.exceptions.UnauthenticatedException;
+import com.rishirajdhr.flagship.project.exceptions.DuplicateProjectException;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -31,12 +33,17 @@ public class ProjectService {
    * @param name the name of the project
    * @param description the description of the project
    * @return the newly created project
+   * @throws DuplicateProjectException if the user has an existing project with the same name
    */
-  public Project createProject(String name, String description) {
+  public Project createProject(String name, String description) throws DuplicateProjectException {
     AppUser owner = appUserProvider.getLoggedInAppUser();
     if (owner == null) throw new UnauthenticatedException();
 
     Project project = new Project(name, description, owner);
-    return projectRepository.save(project);
+    try {
+      return projectRepository.save(project);
+    } catch (DataIntegrityViolationException e) {
+      throw new DuplicateProjectException(name);
+    }
   }
 }
