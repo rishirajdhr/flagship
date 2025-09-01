@@ -33,9 +33,11 @@ public class ProjectService {
    * @param name the name of the project
    * @param description the description of the project
    * @return the newly created project
+   * @throws UnauthenticatedException if the user is not authenticated
    * @throws DuplicateProjectException if the user has an existing project with the same name
    */
-  public Project createProject(String name, String description) throws DuplicateProjectException {
+  public Project createProject(String name, String description)
+                                        throws UnauthenticatedException, DuplicateProjectException {
     AppUser owner = appUserProvider.getLoggedInAppUser();
     if (owner == null) throw new UnauthenticatedException();
 
