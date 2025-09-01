@@ -2,6 +2,7 @@ package com.rishirajdhr.flagship.project;
 
 import com.rishirajdhr.flagship.auth.AppUser;
 import com.rishirajdhr.flagship.auth.AppUserProvider;
+import com.rishirajdhr.flagship.auth.exceptions.UnauthenticatedException;
 
 import org.springframework.stereotype.Service;
 
@@ -33,8 +34,7 @@ public class ProjectService {
    */
   public Project createProject(String name, String description) {
     AppUser owner = appUserProvider.getLoggedInAppUser();
-
-    // TODO: Handle null owner
+    if (owner == null) throw new UnauthenticatedException();
 
     Project project = new Project(name, description, owner);
     return projectRepository.save(project);
