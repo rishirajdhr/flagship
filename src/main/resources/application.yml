@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: flagship
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/flagship_db_dev}
+    username: ${DB_USER:dev_user}
+    password: ${DB_PASSWORD:dev_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
