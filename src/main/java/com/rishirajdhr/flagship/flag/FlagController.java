@@ -4,6 +4,7 @@ import com.rishirajdhr.flagship.auth.AppUser;
 import com.rishirajdhr.flagship.auth.AppUserProvider;
 import com.rishirajdhr.flagship.auth.exceptions.UnauthenticatedException;
 import com.rishirajdhr.flagship.auth.exceptions.UnauthorizedException;
+import com.rishirajdhr.flagship.flag.dto.FlagResponse;
 import com.rishirajdhr.flagship.flag.exceptions.FlagNotFoundException;
 import com.rishirajdhr.flagship.project.Project;
 import com.rishirajdhr.flagship.project.ProjectService;
@@ -55,10 +56,11 @@ public class FlagController {
    * @return the newly created flag
    */
   @PostMapping
-  public Flag createProjectFlag(@PathVariable Long projectId, @RequestBody NewFlag newFlag) {
+  public FlagResponse createProjectFlag(@PathVariable Long projectId, @RequestBody NewFlag newFlag) {
     Project project = getAuthorizedProject(projectId);
-    return flagService.createProjectFlag(
+    Flag flag = flagService.createProjectFlag(
         newFlag.name(), newFlag.description(), newFlag.enabled(), project);
+    return FlagResponse.fromFlag(flag);
   }
 
   /**
@@ -67,9 +69,9 @@ public class FlagController {
    * @return a list of the project feature flags
    */
   @GetMapping
-  public List<Flag> getAllFlagsForProject(@PathVariable Long projectId) {
+  public List<FlagResponse> getAllFlagsForProject(@PathVariable Long projectId) {
     Project project = getAuthorizedProject(projectId);
-    return flagService.getAllFlagsForProject(project);
+    return flagService.getAllFlagsForProject(project).stream().map(FlagResponse::fromFlag).toList();
   }
 
   /**
@@ -80,9 +82,11 @@ public class FlagController {
    * @return the feature flag
    */
   @GetMapping("/{flagId}")
-  public Flag getProjectFlagById(@PathVariable Long flagId, @PathVariable Long projectId) {
+  public FlagResponse getProjectFlagById(@PathVariable Long flagId, @PathVariable Long projectId) {
     Project project = getAuthorizedProject(projectId);
-    return flagService.getProjectFlagById(flagId, project).orElseThrow(() -> new FlagNotFoundException(flagId));
+    Flag flag =
+        flagService.getProjectFlagById(flagId, project).orElseThrow(() -> new FlagNotFoundException(flagId));
+    return FlagResponse.fromFlag(flag);
   }
 
   /**
@@ -94,10 +98,11 @@ public class FlagController {
    * @return the updated feature flag
    */
   @PutMapping("/{flagId}")
-  public Flag updateProjectFlagById(@PathVariable Long flagId, @PathVariable Long projectId,
+  public FlagResponse updateProjectFlagById(@PathVariable Long flagId, @PathVariable Long projectId,
                                     @RequestBody @Valid UpdateFlag updateFlag) {
     Project project = getAuthorizedProject(projectId);
-    return flagService.updateProjectFlagById(flagId, project, updateFlag);
+    Flag flag = flagService.updateProjectFlagById(flagId, project, updateFlag);
+    return FlagResponse.fromFlag(flag);
   }
 
   /**
@@ -108,9 +113,10 @@ public class FlagController {
    * @return the deleted feature flag
    */
   @DeleteMapping("/{flagId}")
-  public Flag deleteProjectFlagById(@PathVariable Long flagId, @PathVariable Long projectId) {
+  public FlagResponse deleteProjectFlagById(@PathVariable Long flagId, @PathVariable Long projectId) {
     Project project = getAuthorizedProject(projectId);
-    return flagService.deleteProjectFlagById(flagId, project);
+    Flag flag = flagService.deleteProjectFlagById(flagId, project);
+    return FlagResponse.fromFlag(flag);
   }
 
   /**
