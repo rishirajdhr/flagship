@@ -1,11 +1,15 @@
 package com.rishirajdhr.flagship.flag;
 
+import com.rishirajdhr.flagship.project.Project;
+
 import java.time.Instant;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -30,6 +34,9 @@ public class Flag {
   private String description;
   private boolean enabled;
 
+  @ManyToOne
+  private Project project;
+
   /**
    * No-arg constructor used by JPA to instantiate a {@link Flag} object.
    */
@@ -41,12 +48,14 @@ public class Flag {
    * @param name the name of the feature flag
    * @param description a plain-text description of the feature flag
    * @param enabled {@code true} if the flag should be enabled, {@code false} otherwise
+   * @param project the project of the feature flag
    * @throws IllegalArgumentException if the flag name or description is invalid
    */
-  public Flag(String name, String description, boolean enabled) throws IllegalArgumentException {
+  public Flag(String name, String description, boolean enabled, Project project) throws IllegalArgumentException {
     this.name = validateName(name);
     this.description = validateDescription(description);
     this.enabled = enabled;
+    this.project = project;
   }
 
   /**
@@ -74,6 +83,15 @@ public class Flag {
    */
   public Instant getUpdatedAt() {
     return updatedAt;
+  }
+
+  /**
+   * Get the project that this feature flag belongs to.
+   *
+   * @return the feature flag's parent project
+   */
+  public Project getProject() {
+    return project;
   }
 
   /**
