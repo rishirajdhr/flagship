@@ -10,6 +10,15 @@ public class FlagNotFoundException extends RuntimeException {
    * @param name the name for which no flag exists
    */
   public FlagNotFoundException(String name) {
-    super("No flag found with name: " + name);
+    super("No flag found in project with name: " + name);
+  }
+
+  /**
+   * Create an exception when no flag with a given ID exists.
+   *
+   * @param id the ID for which no flag exists
+   */
+  public FlagNotFoundException(Long id) {
+    super("No flag found in project with ID: " + id);
   }
 }

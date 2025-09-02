@@ -7,6 +7,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -65,6 +66,24 @@ public class Project {
     this.name = name;
     this.description = description;
     this.owner = owner;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("Project(name='%s', description='%s', owner='%s'", name, description,
+                         owner.getUsername());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof Project project)) return false;
+    return Objects.equals(id, project.id) && Objects.equals(createdAt, project.createdAt) && Objects.equals(updatedAt, project.updatedAt) && Objects.equals(name, project.name) && Objects.equals(description, project.description) && Objects.equals(owner, project.owner);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, createdAt, updatedAt, name, description, owner);
   }
 
   /**

@@ -1,6 +1,7 @@
 package com.rishirajdhr.flagship.auth;
 
 import java.time.Instant;
+import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -49,6 +50,24 @@ public class AppUser {
   public AppUser(String username, String password) {
     this.username = username;
     this.password = password;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("AppUser(id=%s, username='%s', createdAt=%s, updatedAt=%s)", id, username,
+                         createdAt, updatedAt);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof AppUser appUser)) return false;
+    return Objects.equals(id, appUser.id) && Objects.equals(createdAt, appUser.createdAt) && Objects.equals(updatedAt, appUser.updatedAt) && Objects.equals(username, appUser.username) && Objects.equals(password, appUser.password);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, createdAt, updatedAt, username, password);
   }
 
   /**

@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Encapsulates business logic for projects.
@@ -50,5 +51,15 @@ public class ProjectService {
    */
   public List<Project> getAllProjectsForUser(AppUser owner) {
     return projectRepository.findAllByOwner(owner);
+  }
+
+  /**
+   * Get a project by its ID.
+   *
+   * @param projectId the project ID
+   * @return an {@link Optional} containing the project if found
+   */
+  public Optional<Project> getProjectById(Long projectId) {
+    return projectRepository.findById(projectId);
   }
 }
