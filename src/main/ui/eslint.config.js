@@ -12,13 +12,13 @@ import { defineConfig } from "eslint/config";
 export default defineConfig([
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-    plugins: { js, "react-hooks": reactHooks },
-    extends: ["js/recommended", "react-hooks/recommended"],
+    plugins: { js, react: pluginReact, "react-hooks": reactHooks },
+    extends: ["js/recommended", pluginReact.configs.flat.recommended],
+    rules: { ...reactHooks.configs.recommended.rules },
+    settings: { react: { version: "detect" } },
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
-  { settings: { react: { version: "detect" } } },
   {
     files: ["**/*.json"],
     plugins: { json },
