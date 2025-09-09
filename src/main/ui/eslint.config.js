@@ -6,15 +6,17 @@ import pluginReact from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import json from "@eslint/json";
 import markdown from "@eslint/markdown";
-import css from "@eslint/css";
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     plugins: { js, react: pluginReact, "react-hooks": reactHooks },
     extends: ["js/recommended", pluginReact.configs.flat.recommended],
-    rules: { ...reactHooks.configs.recommended.rules },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      "react/react-in-jsx-scope": "off",
+    },
     settings: { react: { version: "detect" } },
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
@@ -43,11 +45,6 @@ export default defineConfig([
     language: "markdown/gfm",
     extends: ["markdown/recommended"],
   },
-  {
-    files: ["**/*.css"],
-    plugins: { css },
-    language: "css/css",
-    extends: ["css/recommended"],
-  },
   eslintConfigPrettier,
+  globalIgnores([".react-router/", "build/**/*", "node_modules/"]),
 ]);
