@@ -9,7 +9,7 @@ const projects = [
   },
 ];
 
-export default function Projects() {
+export default function ProjectsDashboard() {
   return (
     <main className="p-8">
       <section className="mx-auto max-w-2xl space-y-8">
