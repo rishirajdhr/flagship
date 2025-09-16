@@ -1,12 +1,5 @@
-import { Welcome } from "../welcome/welcome";
+import { redirect } from "react-router";
 
-export function meta() {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
-}
-
-export default function Home() {
-  return <Welcome />;
+export async function loader() {
+  throw redirect("/projects");
 }
