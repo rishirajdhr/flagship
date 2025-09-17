@@ -1,11 +1,11 @@
 import { data, Form, redirect, useNavigation } from "react-router";
-import type { Route } from "./+types/login";
+import type { Route } from "./+types/signup";
 
-export default function LoginPage({ actionData }: Route.ComponentProps) {
+export default function SignupPage({ actionData }: Route.ComponentProps) {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
-  const loginError = actionData?.status === 401 ? actionData.error : null;
+  const signupError = actionData?.status === 401 ? actionData.error : null;
   const formErrors = actionData?.status === 400 ? actionData.errors : null;
 
   return (
@@ -13,14 +13,14 @@ export default function LoginPage({ actionData }: Route.ComponentProps) {
       <section className="max-w-md">
         <Form
           method="post"
-          action="/login"
+          action="/signup"
           className="flex flex-col gap-6 rounded border border-gray-300 p-4 shadow-sm"
           replace
         >
           <h2 className="text-center text-3xl font-semibold tracking-tight text-gray-800">
             Flagship
           </h2>
-          {loginError !== null && (
+          {signupError !== null && (
             <div className="flex h-8 items-center overflow-hidden rounded-sm">
               <span className="flex h-full w-8 items-center justify-center bg-red-600 text-red-100">
                 <svg
@@ -39,7 +39,7 @@ export default function LoginPage({ actionData }: Route.ComponentProps) {
                 </svg>
               </span>
               <span className="px-2 py-1.5 text-sm tracking-tight text-red-600">
-                {loginError !== null ? loginError : ""}
+                {signupError !== null ? signupError : ""}
               </span>
             </div>
           )}
@@ -133,10 +133,10 @@ export default function LoginPage({ actionData }: Route.ComponentProps) {
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
                   </span>
-                  <span>Logging in...</span>
+                  <span>Creating account...</span>
                 </>
               ) : (
-                <span>Login</span>
+                <span>Sign up</span>
               )}
             </button>
           </div>
@@ -174,7 +174,7 @@ export async function action({ request }: Route.ActionArgs) {
   const password = passwordEntry?.toString() ?? "";
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const result = await fetch(`${API_BASE_URL}/api/login`, {
+  const result = await fetch(`${API_BASE_URL}/api/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
