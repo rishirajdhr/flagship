@@ -8,6 +8,7 @@ import com.rishirajdhr.flagship.auth.jwt.JWTService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -16,6 +17,7 @@ import jakarta.validation.Valid;
  * Exposes REST endpoints for authentication and authorization flows.
  */
 @RestController
+@RequestMapping("/api")
 public class AuthController {
   private final JWTService jwtService;
   private final AppUserService appUserService;

@@ -28,7 +28,7 @@ import jakarta.validation.Valid;
  * Exposes REST endpoints to access {@link Flag} entities.
  */
 @RestController
-@RequestMapping("projects/{projectId}/flags")
+@RequestMapping("/api/projects/{projectId}/flags")
 public class FlagController {
   private final FlagService flagService;
   private final ProjectService projectService;
