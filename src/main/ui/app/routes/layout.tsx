@@ -1,8 +1,9 @@
 import { Outlet, replace } from "react-router";
+import { getAuthToken } from "~/components/auth";
 import Header from "~/components/header";
 
 export async function clientLoader() {
-  const token = localStorage.getItem("token");
+  const token = getAuthToken();
   if (token === null) {
     return replace("/login");
   }

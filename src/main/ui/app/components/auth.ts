@@ -1,7 +1,9 @@
 import { jwtDecode } from "jwt-decode";
 
+const TOKEN_KEY = "token";
+
 function getAuthToken() {
-  return localStorage.getItem("token");
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 function getAuthUsername() {
@@ -19,4 +21,12 @@ function getAuthUsername() {
   return username;
 }
 
-export { getAuthToken, getAuthUsername };
+function login(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+export { getAuthToken, getAuthUsername, login, logout };

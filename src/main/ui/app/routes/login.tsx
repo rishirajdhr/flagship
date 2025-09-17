@@ -1,5 +1,6 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/login";
+import { login } from "~/components/auth";
 
 export default function LoginPage({ actionData }: Route.ComponentProps) {
   const navigation = useNavigation();
@@ -207,7 +208,7 @@ export async function action({ request }: Route.ActionArgs) {
 export async function clientAction({ serverAction }: Route.ClientActionArgs) {
   const response = await serverAction();
   if (response.status === 200) {
-    localStorage.setItem("token", response.token);
+    login(response.token);
     throw redirect("/projects");
   } else {
     return response;
