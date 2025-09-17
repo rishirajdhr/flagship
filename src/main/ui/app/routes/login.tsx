@@ -1,4 +1,4 @@
-import { data, Form, redirect, useNavigation } from "react-router";
+import { data, Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/login";
 
 export default function LoginPage({ actionData }: Route.ComponentProps) {
@@ -111,7 +111,7 @@ export default function LoginPage({ actionData }: Route.ComponentProps) {
               </div>
             )}
           </div>
-          <div>
+          <div className="space-y-4">
             <button
               type="submit"
               disabled={isSubmitting}
@@ -139,6 +139,15 @@ export default function LoginPage({ actionData }: Route.ComponentProps) {
                 <span>Login</span>
               )}
             </button>
+            <div className="flex flex-row justify-center gap-1 text-center text-sm tracking-tight text-gray-800">
+              <p>{"Don't have an account?"}</p>
+              <Link
+                className="text-orange-500 hover:text-orange-400 active:text-orange-600"
+                to="/signup"
+              >
+                Sign up
+              </Link>
+            </div>
           </div>
         </Form>
       </section>
