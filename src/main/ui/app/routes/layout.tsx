@@ -1,18 +1,31 @@
-import { Outlet, replace } from "react-router";
+import { Outlet, redirect } from "react-router";
 import { getAuthToken, getAuthUsername } from "~/components/auth";
 import Header from "~/components/header";
 import type { Route } from "./+types/layout";
+import { authContext } from "~/middleware-context";
 
-export async function clientLoader() {
-  const token = getAuthToken();
-  if (token === null) {
-    return replace("/login");
-  }
+export const clientMiddleware: Route.ClientMiddlewareFunction[] = [
+  async function clientMiddleware({ context }) {
+    const token = getAuthToken();
+    if (token === null) {
+      throw redirect("/login");
+    }
 
-  const username = getAuthUsername();
-  if (username === null) {
-    return replace("/login");
+    const username = getAuthUsername();
+    if (username === null) {
+      throw redirect("/login");
+    }
+
+    context.set(authContext, { token, username });
+  },
+];
+
+export async function clientLoader({ context }: Route.ClientLoaderArgs) {
+  const auth = context.get(authContext);
+  if (auth === null) {
+    throw redirect("/login");
   }
+  const { username } = auth;
   return username;
 }
 
