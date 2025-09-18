@@ -176,14 +176,17 @@ export default function Project({
   const modal = searchParams.get("modal");
 
   const handleCreateFlagDialogOpenChange = (open: boolean) => {
-    setSearchParams((prevSearchParams) => {
-      if (open) {
-        prevSearchParams.set("modal", "create-flag");
-      } else {
-        prevSearchParams.delete("modal");
-      }
-      return prevSearchParams;
-    });
+    setSearchParams(
+      (prevSearchParams) => {
+        if (open) {
+          prevSearchParams.set("modal", "create-flag");
+        } else {
+          prevSearchParams.delete("modal");
+        }
+        return prevSearchParams;
+      },
+      { replace: true }
+    );
   };
 
   return (
