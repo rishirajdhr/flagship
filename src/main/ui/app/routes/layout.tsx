@@ -1,19 +1,25 @@
 import { Outlet, replace } from "react-router";
-import { getAuthToken } from "~/components/auth";
+import { getAuthToken, getAuthUsername } from "~/components/auth";
 import Header from "~/components/header";
+import type { Route } from "./+types/layout";
 
 export async function clientLoader() {
   const token = getAuthToken();
   if (token === null) {
     return replace("/login");
   }
-  return null;
+
+  const username = getAuthUsername();
+  if (username === null) {
+    return replace("/login");
+  }
+  return username;
 }
 
-export default function Layout() {
+export default function Layout({ loaderData: username }: Route.ComponentProps) {
   return (
     <>
-      <Header />
+      <Header username={username} />
       <Outlet />
     </>
   );
