@@ -1,38 +1,27 @@
 import * as Switch from "@radix-ui/react-switch";
 import { Tooltip, TooltipProvider } from "~/components/ui/tooltip";
 import type { Route } from "./+types/project";
-import { getAuthToken } from "~/components/auth";
 import { redirect, useFetcher } from "react-router";
 import type React from "react";
 import { cloneElement } from "react";
+import {
+  getAllFlagsForProject,
+  updateFlagForProject,
+  type UpdateFlagParams,
+} from "~/api/flags";
+import { authContext } from "~/middleware-context";
+import type { Flag } from "~/types";
 
-type Flag = {
-  id: number;
-  name: string;
-  description: string;
-  enabled: boolean;
-  projectId: number;
-  owner: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export async function clientLoader({ params }: Route.ClientLoaderArgs) {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const token = getAuthToken();
-  if (token === null) {
+export async function clientLoader({
+  context,
+  params,
+}: Route.ClientLoaderArgs) {
+  const auth = context.get(authContext);
+  if (auth === null) {
     throw redirect("/login");
   }
 
-  const result = await fetch(
-    `${API_BASE_URL}/api/projects/${params.projectId}/flags`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const result = await getAllFlagsForProject(params.projectId, auth);
 
   if (result.status === 401) {
     throw redirect("/login");
@@ -48,41 +37,27 @@ export async function clientLoader({ params }: Route.ClientLoaderArgs) {
   );
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export async function clientAction({
+  context,
   params,
   request,
 }: Route.ClientActionArgs) {
-  await sleep(5000);
-  const token = getAuthToken();
-  if (token === null) {
+  const auth = context.get(authContext);
+  if (auth === null) {
     throw redirect("/login");
   }
 
   const formData = await request.formData();
   const flagId = formData.get("flagId")?.toString() ?? "";
-  const body: Record<string, unknown> = {};
+  const { projectId } = params;
+  const updateFlagParams: UpdateFlagParams = { flagId, projectId };
 
   const enabledEntry = formData.get("enabled");
   if (enabledEntry !== null) {
-    body.enabled = enabledEntry.toString() === "true";
+    updateFlagParams.enabled = enabledEntry.toString() === "true";
   }
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const result = await fetch(
-    `${API_BASE_URL}/api/projects/${params.projectId}/flags/${flagId}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  const result = await updateFlagForProject(updateFlagParams, auth);
 
   if (result.status === 401) {
     throw redirect("/login");

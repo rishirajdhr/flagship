@@ -1,6 +1,7 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/login";
-import { login } from "~/components/auth";
+import { setAuthToken } from "~/components/auth";
+import { login } from "~/api/auth";
 
 export default function LoginPage({ actionData }: Route.ComponentProps) {
   const navigation = useNavigation();
@@ -183,12 +184,7 @@ export async function action({ request }: Route.ActionArgs) {
   const username = usernameEntry?.toString() ?? "";
   const password = passwordEntry?.toString() ?? "";
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const result = await fetch(`${API_BASE_URL}/api/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
+  const result = await login({ username, password });
 
   if (!result.ok) {
     return data(
@@ -208,7 +204,7 @@ export async function action({ request }: Route.ActionArgs) {
 export async function clientAction({ serverAction }: Route.ClientActionArgs) {
   const response = await serverAction();
   if (response.status === 200) {
-    login(response.token);
+    setAuthToken(response.token);
     throw redirect("/projects");
   } else {
     return response;

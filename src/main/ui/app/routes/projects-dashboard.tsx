@@ -1,6 +1,7 @@
 import { Link, redirect } from "react-router";
-import { getAuthToken } from "~/components/auth";
 import type { Route } from "./+types/projects-dashboard";
+import { authContext } from "~/middleware-context";
+import { getAllProjects } from "~/api/projects";
 
 type Project = {
   id: number;
@@ -11,19 +12,13 @@ type Project = {
   updatedAt: string;
 };
 
-export async function clientLoader() {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const token = getAuthToken();
-  if (token === null) {
+export async function clientLoader({ context }: Route.ClientLoaderArgs) {
+  const auth = context.get(authContext);
+  if (auth === null) {
     throw redirect("/login");
   }
 
-  const result = await fetch(`${API_BASE_URL}/api/projects`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const result = await getAllProjects(auth);
 
   if (result.status === 401) {
     throw redirect("/login");
