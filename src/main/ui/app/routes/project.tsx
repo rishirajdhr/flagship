@@ -5,8 +5,10 @@ import { redirect, useFetcher } from "react-router";
 import type React from "react";
 import { cloneElement } from "react";
 import {
+  deleteFlagForProject,
   getAllFlagsForProject,
   updateFlagForProject,
+  type FlagParams,
   type UpdateFlagParams,
 } from "~/api/flags";
 import { authContext } from "~/middleware-context";
@@ -37,7 +39,7 @@ export async function clientLoader({
   );
 }
 
-export async function clientAction({
+async function updateFlag({
   context,
   params,
   request,
@@ -64,11 +66,54 @@ export async function clientAction({
   }
 
   if (!result.ok) {
-    throw new Response("Failed to update project", { status: result.status });
+    throw new Response("Failed to update flag", { status: result.status });
   }
 
   const updatedFlag = await result.json();
   return updatedFlag as Flag;
+}
+
+async function deleteFlag({
+  context,
+  params,
+  request,
+}: Route.ClientActionArgs) {
+  const auth = context.get(authContext);
+  if (auth === null) {
+    throw redirect("/login");
+  }
+
+  const formData = await request.formData();
+  const flagId = formData.get("flagId")?.toString() ?? "";
+  const { projectId } = params;
+  const flagParams: FlagParams = { flagId, projectId };
+
+  const result = await deleteFlagForProject(flagParams, auth);
+
+  if (result.status === 401) {
+    throw redirect("/login");
+  }
+
+  if (!result.ok) {
+    throw new Response("Failed to delete flag", { status: result.status });
+  }
+
+  const deletedFlag = await result.json();
+  return deletedFlag as Flag;
+}
+
+export async function clientAction(args: Route.ClientActionArgs) {
+  const auth = args.context.get(authContext);
+  if (auth === null) {
+    throw redirect("/login");
+  }
+
+  switch (args.request.method) {
+    case "PUT":
+      return await updateFlag(args);
+    case "DELETE":
+      return await deleteFlag(args);
+  }
 }
 
 export default function Project({ loaderData: flags }: Route.ComponentProps) {
@@ -159,7 +204,14 @@ function FlagRecord({ flag }: { flag: Flag }) {
   const handleCheckedChange = (checked: boolean) => {
     fetcher.submit(
       { flagId: flag.id, enabled: checked },
-      { action: `/projects/${flag.projectId}`, method: "POST" }
+      { action: `/projects/${flag.projectId}`, method: "PUT" }
+    );
+  };
+
+  const handleDelete = () => {
+    fetcher.submit(
+      { flagId: flag.id },
+      { action: `/projects/${flag.projectId}`, method: "DELETE" }
     );
   };
 
@@ -170,7 +222,10 @@ function FlagRecord({ flag }: { flag: Flag }) {
       : flag.enabled;
 
   return (
-    <tr key={flag.name}>
+    <tr
+      data-deleted={fetcher.formMethod === "DELETE"}
+      className="data-[deleted=true]:animate-pulse"
+    >
       <td className="p-4">
         <div className="space-y-2">
           <div className="text-xl font-semibold tracking-tight text-gray-800">
@@ -204,6 +259,9 @@ function FlagRecord({ flag }: { flag: Flag }) {
             action="Copy URL"
             variant="normal"
             disabled={fetcher.state === "submitting"}
+            onClick={() => {
+              return;
+            }}
             defaultIcon={
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -234,6 +292,9 @@ function FlagRecord({ flag }: { flag: Flag }) {
             action="Edit"
             variant="normal"
             disabled={fetcher.state === "submitting"}
+            onClick={() => {
+              return;
+            }}
             defaultIcon={
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -264,6 +325,7 @@ function FlagRecord({ flag }: { flag: Flag }) {
             action="Delete"
             variant="danger"
             disabled={fetcher.state === "submitting"}
+            onClick={handleDelete}
             defaultIcon={
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -302,9 +364,10 @@ function FlagRecord({ flag }: { flag: Flag }) {
 interface FlagActionButtonProps {
   action: string;
   disabled: boolean;
-  defaultIcon: React.ReactSVGElement;
-  hoverIcon: React.ReactSVGElement;
+  defaultIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
+  hoverIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
   variant: "normal" | "danger";
+  onClick: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 const variantStyles: Record<FlagActionButtonProps["variant"], string> = {
@@ -312,15 +375,9 @@ const variantStyles: Record<FlagActionButtonProps["variant"], string> = {
   danger: "text-red-500",
 };
 
-function FlagActionButton(props: {
-  action: string;
-  disabled: boolean;
-  defaultIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
-  hoverIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
-  variant: "normal" | "danger";
-}) {
+function FlagActionButton(props: FlagActionButtonProps) {
   const baseIconStyles = "absolute top-0 left-0 size-6";
-  const disabledIconStyles = "text-gray-400";
+  const disabledIconStyles = "text-gray-600";
   const defaultIconStyles =
     "text-gray-600 opacity-100 group-hover:opacity-0 transition-opacity";
   const hoverIconVisibilityStyles =
@@ -341,7 +398,10 @@ function FlagActionButton(props: {
     <span className="relative size-6 cursor-wait">{disabledIcon}</span>
   ) : (
     <Tooltip content={props.action}>
-      <button className="group flex cursor-pointer items-center justify-center">
+      <button
+        onClick={props.onClick}
+        className="group flex cursor-pointer items-center justify-center"
+      >
         <span className="sr-only">{props.action}</span>
         <span className="relative size-6">
           {defaultIcon}

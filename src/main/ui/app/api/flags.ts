@@ -10,11 +10,14 @@ export async function getAllFlagsForProject(projectId: string, auth: Auth) {
   return result;
 }
 
-export interface UpdateFlagParams
-  extends Partial<Pick<Flag, "description" | "enabled">> {
+export interface FlagParams {
   flagId: string;
   projectId: string;
 }
+
+export interface UpdateFlagParams
+  extends FlagParams,
+    Partial<Pick<Flag, "description" | "enabled">> {}
 
 export async function updateFlagForProject(
   params: UpdateFlagParams,
@@ -30,6 +33,20 @@ export async function updateFlagForProject(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+    }
+  );
+  return result;
+}
+
+export async function deleteFlagForProject(params: FlagParams, auth: Auth) {
+  const { flagId, projectId } = params;
+  const result = await fetch(
+    withBase(`/api/projects/${projectId}/flags/${flagId}`),
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+      },
     }
   );
   return result;
