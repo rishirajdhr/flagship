@@ -1,15 +1,45 @@
-const projects = [
-  {
-    name: "Kaminel",
-    description: "A text-adventure game engine",
-  },
-  {
-    name: "Blueis",
-    description: "An in-memory KV store",
-  },
-];
+import { Link, redirect } from "react-router";
+import { getAuthToken } from "~/components/auth";
+import type { Route } from "./+types/projects-dashboard";
 
-export default function ProjectsDashboard() {
+type Project = {
+  id: number;
+  name: string;
+  description: string;
+  owner: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function clientLoader() {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const token = getAuthToken();
+  if (token === null) {
+    throw redirect("/login");
+  }
+
+  const result = await fetch(`${API_BASE_URL}/api/projects`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (result.status === 401) {
+    throw redirect("/login");
+  }
+
+  if (!result.ok) {
+    throw new Response("Failed to load projects", { status: result.status });
+  }
+
+  const projects = await result.json();
+  return projects as Project[];
+}
+
+export default function ProjectsDashboard({
+  loaderData: projects,
+}: Route.ComponentProps) {
   return (
     <main className="p-8">
       <section className="mx-auto max-w-2xl space-y-8">
@@ -40,7 +70,7 @@ export default function ProjectsDashboard() {
         <div className="flex flex-col gap-4">
           {projects.map((project) => (
             <div
-              className="group flex w-full flex-row items-center gap-4 rounded-lg border border-gray-200 p-8 shadow-xs hover:cursor-pointer hover:shadow-sm"
+              className="group relative flex w-full flex-row items-center gap-4 rounded-lg border border-gray-200 p-8 shadow-xs hover:cursor-pointer hover:shadow-sm"
               key={project.name}
             >
               <div className="flex size-12 items-center justify-center rounded-full bg-orange-500">
@@ -57,22 +87,27 @@ export default function ProjectsDashboard() {
                 </p>
               </div>
               <div className="text-gray-600">
-                <span className="inline-block -translate-x-2 transition-transform group-hover:translate-x-0">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="size-6"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m8.25 4.5 7.5 7.5-7.5 7.5"
-                    />
-                  </svg>
-                </span>
+                <Link
+                  className="after:absolute after:top-0 after:right-0 after:bottom-0 after:left-0"
+                  to={`/projects/${project.id}`}
+                >
+                  <span className="inline-block -translate-x-2 transition-transform group-hover:translate-x-0">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="size-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                      />
+                    </svg>
+                  </span>
+                </Link>
               </div>
             </div>
           ))}

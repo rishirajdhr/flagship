@@ -20,7 +20,7 @@ import jakarta.validation.Valid;
  * Exposes REST endpoints for projects.
  */
 @RestController
-@RequestMapping("/projects")
+@RequestMapping("/api/projects")
 public class ProjectController {
   private final ProjectService projectService;
   private final AppUserProvider appUserProvider;
