@@ -282,7 +282,7 @@ export default function Project({
                           <input
                             id="name"
                             name="name"
-                            type="name"
+                            type="text"
                             placeholder="Name of the feature flag"
                             className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
                           />
@@ -294,10 +294,9 @@ export default function Project({
                           >
                             Description
                           </label>
-                          <input
+                          <textarea
                             id="description"
                             name="description"
-                            type="description"
                             placeholder="A description for the feature flag"
                             className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
                           />
@@ -626,7 +625,7 @@ function FlagEditAction({ flag, disabled }: { flag: Flag; disabled: boolean }) {
                   <input
                     id="name"
                     name="name"
-                    type="name"
+                    type="text"
                     placeholder="Name of the feature flag"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -640,10 +639,9 @@ function FlagEditAction({ flag, disabled }: { flag: Flag; disabled: boolean }) {
                   >
                     Description
                   </label>
-                  <input
+                  <textarea
                     id="description"
                     name="description"
-                    type="description"
                     placeholder="A description for the feature flag"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
