@@ -5,8 +5,10 @@ import com.rishirajdhr.flagship.auth.AppUserProvider;
 import com.rishirajdhr.flagship.auth.exceptions.UnauthenticatedException;
 import com.rishirajdhr.flagship.project.dto.NewProjectRequest;
 import com.rishirajdhr.flagship.project.dto.ProjectResponse;
+import com.rishirajdhr.flagship.project.exceptions.ProjectNotFoundException;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -67,5 +69,15 @@ public class ProjectController {
     return projectService.getAllProjectsForUser(owner).stream()
         .map(ProjectResponse::fromProject)
         .toList();
+  }
+
+  @GetMapping("/{projectId}")
+  public ProjectResponse getProjectByIdForUser(@PathVariable Long projectId) {
+    AppUser owner = appUserProvider.getLoggedInAppUser();
+    if (owner == null) throw new UnauthenticatedException();
+
+    Project project =
+        projectService.getProjectById(projectId).orElseThrow(() -> new ProjectNotFoundException(projectId));
+    return ProjectResponse.fromProject(project);
   }
 }

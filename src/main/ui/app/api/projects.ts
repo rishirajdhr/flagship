@@ -26,3 +26,12 @@ export async function createProject(params: NewProjectParams, auth: Auth) {
   });
   return result;
 }
+
+export async function getProject(projectId: string, auth: Auth) {
+  const result = await fetch(withBase(`/api/projects/${projectId}`), {
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
+  });
+  return result;
+}

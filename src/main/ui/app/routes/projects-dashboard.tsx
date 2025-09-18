@@ -7,15 +7,7 @@ import {
   getAllProjects,
   type NewProjectParams,
 } from "~/api/projects";
-
-type Project = {
-  id: number;
-  name: string;
-  description: string;
-  owner: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import type { Project } from "~/types";
 
 export async function clientLoader({ context }: Route.ClientLoaderArgs) {
   const auth = context.get(authContext);

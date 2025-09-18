@@ -13,3 +13,12 @@ export type Flag = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Project = {
+  id: number;
+  name: string;
+  description: string;
+  owner: string;
+  createdAt: string;
+  updatedAt: string;
+};

@@ -21,7 +21,8 @@ import {
   type UpdateFlagParams,
 } from "~/api/flags";
 import { authContext } from "~/middleware-context";
-import type { Flag } from "~/types";
+import type { Flag, Project } from "~/types";
+import { getProject } from "~/api/projects";
 
 export async function clientLoader({
   context,
@@ -32,20 +33,34 @@ export async function clientLoader({
     throw redirect("/login");
   }
 
-  const result = await getAllFlagsForProject(params.projectId, auth);
+  const [flagsResult, projectResult] = await Promise.all([
+    getAllFlagsForProject(params.projectId, auth),
+    getProject(params.projectId, auth),
+  ]);
 
-  if (result.status === 401) {
+  if (flagsResult.status === 401 || projectResult.status === 401) {
     throw redirect("/login");
   }
 
-  if (!result.ok) {
-    throw new Response("Failed to load project", { status: result.status });
+  if (!projectResult.ok) {
+    throw new Response("Failed to load project", {
+      status: projectResult.status,
+    });
   }
 
-  const flags: Flag[] = await result.json();
-  return flags.sort((a, b) =>
+  if (!flagsResult.ok) {
+    throw new Response("Failed to load project flags", {
+      status: flagsResult.status,
+    });
+  }
+
+  const project: Project = await projectResult.json();
+  const flags: Flag[] = await flagsResult.json();
+  flags.sort((a, b) =>
     a.name.toLowerCase().localeCompare(b.name.toLowerCase())
   );
+
+  return { project, flags };
 }
 
 async function createFlag({
@@ -168,10 +183,8 @@ export async function clientAction(args: Route.ClientActionArgs) {
   }
 }
 
-export default function Project({
-  loaderData: flags,
-  params,
-}: Route.ComponentProps) {
+export default function Project({ loaderData, params }: Route.ComponentProps) {
+  const { project, flags } = loaderData;
   const [searchParams, setSearchParams] = useSearchParams();
   const modal = searchParams.get("modal");
 
@@ -216,7 +229,7 @@ export default function Project({
             <span className="text-sm font-semibold">Back to Projects</span>
           </Link>
           <h1 className="mb-8 text-4xl font-light tracking-tight text-gray-800">
-            Kaminel
+            {project.name}
           </h1>
           <div className="mb-4 flex flex-row items-center justify-between">
             <span className="relative">
