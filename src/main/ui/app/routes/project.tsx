@@ -4,7 +4,7 @@ import { Tooltip, TooltipProvider } from "~/components/ui/tooltip";
 import type { Route } from "./+types/project";
 import { Form, redirect, useFetcher, useSearchParams } from "react-router";
 import type React from "react";
-import { cloneElement } from "react";
+import { cloneElement, useState } from "react";
 import {
   createFlagForProject,
   deleteFlagForProject,
@@ -92,6 +92,11 @@ async function updateFlag({
   const flagId = formData.get("flagId")?.toString() ?? "";
   const { projectId } = params;
   const updateFlagParams: UpdateFlagParams = { flagId, projectId };
+
+  const descriptionEntry = formData.get("description");
+  if (descriptionEntry !== null) {
+    updateFlagParams.description = descriptionEntry.toString();
+  }
 
   const enabledEntry = formData.get("enabled");
   if (enabledEntry !== null) {
@@ -300,12 +305,15 @@ export default function Project({
                       </div>
                       <div className="flex flex-row items-center justify-end gap-2 border-t border-gray-300 p-4">
                         <Dialog.Close asChild>
-                          <button className="flex w-24 flex-row items-center justify-center gap-2 rounded px-4 py-2 font-medium tracking-tight text-orange-500 transition-colors not-disabled:hover:bg-orange-100/40 not-disabled:active:bg-orange-100/25 disabled:opacity-50">
+                          <button
+                            type="button"
+                            className="flex w-24 flex-row items-center justify-center gap-2 rounded px-4 py-2 font-medium tracking-tight text-orange-500 transition-colors not-disabled:hover:bg-orange-100/40 not-disabled:active:bg-orange-100/25 disabled:opacity-50"
+                          >
                             <span>Cancel</span>
                           </button>
                         </Dialog.Close>
                         <button
-                          // type="submit"
+                          type="submit"
                           // disabled={isSubmitting}
                           className="flex w-24 flex-row items-center justify-center gap-2 rounded bg-orange-500 px-4 py-2 font-medium tracking-tight text-white transition-colors not-disabled:hover:bg-orange-400 not-disabled:active:bg-orange-600 disabled:opacity-50"
                         >
@@ -460,38 +468,9 @@ function FlagRecord({ flag }: { flag: Flag }) {
               </svg>
             }
           />
-          <FlagActionButton
-            action="Edit"
-            variant="normal"
+          <FlagEditAction
             disabled={fetcher.state === "submitting"}
-            onClick={() => {
-              return;
-            }}
-            defaultIcon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                />
-              </svg>
-            }
-            hoverIcon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
-                <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
-              </svg>
-            }
+            flag={flag}
           />
           <FlagActionButton
             action="Delete"
@@ -533,13 +512,198 @@ function FlagRecord({ flag }: { flag: Flag }) {
   );
 }
 
+function FlagEditAction({ flag, disabled }: { flag: Flag; disabled: boolean }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [name, setName] = useState(flag.name);
+  const [description, setDescription] = useState(flag.description);
+
+  const modal = searchParams.get("modal");
+  const flagIdForModal = searchParams.get("flag");
+
+  const handleEditFlagDialogOpenChange = (open: boolean) => {
+    setSearchParams(
+      (prevSearchParams) => {
+        if (open) {
+          prevSearchParams.set("modal", "edit-flag");
+          prevSearchParams.set("flag", flag.id.toString());
+        } else {
+          prevSearchParams.delete("modal");
+          prevSearchParams.delete("flag");
+        }
+        return prevSearchParams;
+      },
+      { replace: true }
+    );
+  };
+
+  const editModalOpen =
+    modal === "edit-flag" && flagIdForModal === flag.id.toString();
+
+  const editModalHasUpdates =
+    name !== flag.name || description !== flag.description;
+
+  return (
+    <Dialog.Root
+      open={editModalOpen}
+      onOpenChange={handleEditFlagDialogOpenChange}
+    >
+      <Dialog.Trigger asChild>
+        <FlagActionButton
+          action="Edit"
+          variant="normal"
+          disabled={disabled}
+          defaultIcon={
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+              />
+            </svg>
+          }
+          hoverIcon={
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+              <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+            </svg>
+          }
+        />
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed top-0 right-0 bottom-0 left-0 grid place-items-center bg-gray-800/25 backdrop-blur-xs">
+          <Dialog.Content className="rounded border-gray-300 bg-white shadow">
+            <Form method="PUT" action={`/projects/${flag.projectId}`}>
+              <div className="flex flex-row items-center justify-between border-b border-gray-300 p-4">
+                <div>
+                  <Dialog.Title className="text-xl font-semibold tracking-tight text-gray-800">
+                    Edit Flag
+                  </Dialog.Title>
+                </div>
+                <div>
+                  <Dialog.Close asChild>
+                    <button className="flex size-8 items-center justify-center rounded-full hover:bg-gray-200/40">
+                      <span className="text-gray-800">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="size-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18 18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </span>
+                    </button>
+                  </Dialog.Close>
+                </div>
+              </div>
+              <div className="flex flex-col gap-6 p-4">
+                <div className="hidden">
+                  <input type="hidden" name="flagId" value={flag.id} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="name"
+                    className="tracking-tight text-gray-800"
+                  >
+                    Name
+                  </label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="name"
+                    placeholder="Name of the feature flag"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="description"
+                    className="tracking-tight text-gray-800"
+                  >
+                    Description
+                  </label>
+                  <input
+                    id="description"
+                    name="description"
+                    type="description"
+                    placeholder="A description for the feature flag"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-row items-center justify-end gap-2 border-t border-gray-300 p-4">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="flex w-24 flex-row items-center justify-center gap-2 rounded px-4 py-2 font-medium tracking-tight text-orange-500 transition-colors not-disabled:hover:bg-orange-100/40 not-disabled:active:bg-orange-100/25 disabled:opacity-50"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="submit"
+                  disabled={!editModalHasUpdates}
+                  className="flex w-24 flex-row items-center justify-center gap-2 rounded bg-orange-500 px-4 py-2 font-medium tracking-tight text-white transition-colors not-disabled:hover:bg-orange-400 not-disabled:active:bg-orange-600 disabled:opacity-50"
+                >
+                  {/* {isSubmitting ? (
+                <>
+                  <span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-5 animate-spin"
+                    >
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                  </span>
+                  <span>Logging in...</span>
+                </>
+              ) : (
+                <span>Login</span>
+              )} */}
+                  <span>Update</span>
+                </button>
+              </div>
+            </Form>
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 interface FlagActionButtonProps {
   action: string;
   disabled: boolean;
   defaultIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
   hoverIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
   variant: "normal" | "danger";
-  onClick: React.MouseEventHandler<HTMLButtonElement>;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 const variantStyles: Record<FlagActionButtonProps["variant"], string> = {
@@ -571,7 +735,7 @@ function FlagActionButton(props: FlagActionButtonProps) {
   ) : (
     <Tooltip content={props.action}>
       <button
-        onClick={props.onClick}
+        {...(props.onClick ? { onClick: props.onClick } : {})}
         className="group flex cursor-pointer items-center justify-center"
       >
         <span className="sr-only">{props.action}</span>
