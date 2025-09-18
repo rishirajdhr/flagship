@@ -2,7 +2,13 @@ import * as Dialog from "@radix-ui/react-dialog";
 import * as Switch from "@radix-ui/react-switch";
 import { Tooltip, TooltipProvider } from "~/components/ui/tooltip";
 import type { Route } from "./+types/project";
-import { Form, redirect, useFetcher, useSearchParams } from "react-router";
+import {
+  Form,
+  Link,
+  redirect,
+  useFetcher,
+  useSearchParams,
+} from "react-router";
 import type React from "react";
 import { cloneElement, useState } from "react";
 import {
@@ -184,6 +190,28 @@ export default function Project({
     <main className="p-8">
       <TooltipProvider>
         <section className="mx-auto max-w-4xl">
+          <Link
+            to="/projects"
+            className="group relative mb-8 flex w-fit -translate-x-3 flex-row items-center gap-1.5 rounded-sm px-3 py-1.5 text-orange-600 hover:bg-orange-100/30"
+          >
+            <span className="translate-x-0 transition-transform will-change-transform group-hover:-translate-x-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+                stroke="currentColor"
+                className="size-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                />
+              </svg>
+            </span>
+            <span className="text-sm font-semibold">Back to Projects</span>
+          </Link>
           <h1 className="mb-8 text-4xl font-light tracking-tight text-gray-800">
             Kaminel
           </h1>
