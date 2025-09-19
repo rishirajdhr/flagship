@@ -1,6 +1,6 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/login";
-import { setAuthToken } from "~/components/auth";
+import { setAuthToken } from "~/utils/auth";
 import { login } from "~/api/auth";
 
 export default function LoginPage({ actionData }: Route.ComponentProps) {

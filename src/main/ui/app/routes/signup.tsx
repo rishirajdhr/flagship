@@ -1,6 +1,6 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/signup";
-import { setAuthToken } from "~/components/auth";
+import { setAuthToken } from "~/utils/auth";
 import { signup } from "~/api/auth";
 
 export default function SignupPage({ actionData }: Route.ComponentProps) {

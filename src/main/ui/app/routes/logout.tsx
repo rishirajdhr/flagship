@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import { removeAuthToken } from "~/components/auth";
+import { removeAuthToken } from "~/utils/auth";
 
 export async function clientAction() {
   removeAuthToken();

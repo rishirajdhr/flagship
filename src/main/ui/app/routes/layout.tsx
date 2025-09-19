@@ -1,5 +1,5 @@
 import { Outlet, redirect } from "react-router";
-import { getAuthToken, getAuthUsername } from "~/components/auth";
+import { getAuthToken, getAuthUsername } from "~/utils/auth";
 import Header from "~/components/header";
 import type { Route } from "./+types/layout";
 import { authContext } from "~/middleware-context";
