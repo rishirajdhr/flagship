@@ -2,6 +2,8 @@ import { data, Form, Link, redirect, useNavigation } from "react-router";
 import type { Route } from "./+types/signup";
 import { setAuthToken } from "~/utils/auth";
 import { signup } from "~/api/auth";
+import { PasswordInput } from "~/components/auth/password-input";
+import { Input } from "~/components/ui/input";
 
 export default function SignupPage({ actionData }: Route.ComponentProps) {
   const navigation = useNavigation();
@@ -49,12 +51,11 @@ export default function SignupPage({ actionData }: Route.ComponentProps) {
             <label htmlFor="username" className="tracking-tight text-gray-800">
               Username
             </label>
-            <input
+            <Input
               id="username"
               name="username"
               type="text"
               placeholder="Enter your username"
-              className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
             />
             {formErrors !== null && "username" in formErrors && (
               <div className="flex flex-row items-center gap-1.5 text-sm tracking-tight text-red-600">
@@ -83,12 +84,10 @@ export default function SignupPage({ actionData }: Route.ComponentProps) {
             <label htmlFor="password" className="tracking-tight text-gray-800">
               Password
             </label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               placeholder="Enter your password"
-              className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
             />
             {formErrors !== null && "password" in formErrors && (
               <div className="flex flex-row items-center gap-1.5 text-sm tracking-tight text-red-600">
