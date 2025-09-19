@@ -10,7 +10,7 @@ import {
   useSearchParams,
 } from "react-router";
 import type React from "react";
-import { cloneElement, useState } from "react";
+import { cloneElement, useEffect, useState } from "react";
 import {
   createFlagForProject,
   deleteFlagForProject,
@@ -184,10 +184,39 @@ export async function clientAction(args: Route.ClientActionArgs) {
   }
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+
+  return debounced;
+}
+
 export default function Project({ loaderData, params }: Route.ComponentProps) {
   const { project, flags } = loaderData;
   const [searchParams, setSearchParams] = useSearchParams();
   const modal = searchParams.get("modal");
+  const initialFlagQuery = searchParams.get("q") ?? "";
+  const [flagQuery, setFlagQuery] = useState(initialFlagQuery);
+
+  const debouncedFlagQuery = useDebounce(flagQuery, 400);
+
+  useEffect(() => {
+    setSearchParams(
+      (prevSearchParams) => {
+        if (debouncedFlagQuery === "") {
+          prevSearchParams.delete("q");
+        } else {
+          prevSearchParams.set("q", debouncedFlagQuery);
+        }
+        return prevSearchParams;
+      },
+      { replace: true }
+    );
+  }, [debouncedFlagQuery, setSearchParams]);
 
   const handleCreateFlagDialogOpenChange = (open: boolean) => {
     setSearchParams(
@@ -202,6 +231,8 @@ export default function Project({ loaderData, params }: Route.ComponentProps) {
       { replace: true }
     );
   };
+
+  const filteredFlags = flags.filter(({ name }) => name.includes(flagQuery));
 
   return (
     <main className="p-8">
@@ -237,6 +268,8 @@ export default function Project({ loaderData, params }: Route.ComponentProps) {
               <input
                 className="w-sm rounded-sm border border-gray-300 px-3 py-1.5 pl-7 text-sm text-gray-800 placeholder:text-gray-400"
                 placeholder="Search for a flag"
+                value={flagQuery}
+                onChange={(e) => setFlagQuery(e.target.value)}
               />
               <span className="absolute top-1/2 left-2 -translate-y-1/2 text-gray-400">
                 <svg
@@ -410,7 +443,7 @@ export default function Project({ loaderData, params }: Route.ComponentProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-300">
-                {flags.map((flag) => (
+                {filteredFlags.map((flag) => (
                   <FlagRecord key={flag.id} flag={flag} />
                 ))}
               </tbody>
