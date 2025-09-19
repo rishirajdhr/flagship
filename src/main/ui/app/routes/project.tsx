@@ -1,114 +1,278 @@
+import * as Dialog from "@radix-ui/react-dialog";
 import * as Switch from "@radix-ui/react-switch";
 import { Tooltip, TooltipProvider } from "~/components/ui/tooltip";
 import type { Route } from "./+types/project";
-import { getAuthToken } from "~/components/auth";
-import { redirect, useFetcher } from "react-router";
+import {
+  Form,
+  Link,
+  redirect,
+  useFetcher,
+  useSearchParams,
+} from "react-router";
 import type React from "react";
-import { cloneElement } from "react";
+import { cloneElement, useEffect, useState } from "react";
+import {
+  createFlagForProject,
+  deleteFlagForProject,
+  getAllFlagsForProject,
+  updateFlagForProject,
+  type FlagParams,
+  type NewFlagParams,
+  type UpdateFlagParams,
+} from "~/api/flags";
+import { authContext } from "~/middleware-context";
+import type { Flag, Project } from "~/types";
+import { getProject } from "~/api/projects";
+import { withBase } from "~/api/base";
+import { Input } from "~/components/ui/input";
 
-type Flag = {
-  id: number;
-  name: string;
-  description: string;
-  enabled: boolean;
-  projectId: number;
-  owner: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export async function clientLoader({ params }: Route.ClientLoaderArgs) {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const token = getAuthToken();
-  if (token === null) {
+export async function clientLoader({
+  context,
+  params,
+}: Route.ClientLoaderArgs) {
+  const auth = context.get(authContext);
+  if (auth === null) {
     throw redirect("/login");
   }
 
-  const result = await fetch(
-    `${API_BASE_URL}/api/projects/${params.projectId}/flags`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+  const [flagsResult, projectResult] = await Promise.all([
+    getAllFlagsForProject(params.projectId, auth),
+    getProject(params.projectId, auth),
+  ]);
+
+  if (flagsResult.status === 401 || projectResult.status === 401) {
+    throw redirect("/login");
+  }
+
+  if (!projectResult.ok) {
+    throw new Response("Failed to load project", {
+      status: projectResult.status,
+    });
+  }
+
+  if (!flagsResult.ok) {
+    throw new Response("Failed to load project flags", {
+      status: flagsResult.status,
+    });
+  }
+
+  const project: Project = await projectResult.json();
+  const flags: Flag[] = await flagsResult.json();
+  flags.sort((a, b) =>
+    a.name.toLowerCase().localeCompare(b.name.toLowerCase())
   );
+
+  return { project, flags };
+}
+
+async function createFlag({
+  context,
+  params,
+  request,
+}: Route.ClientActionArgs) {
+  const auth = context.get(authContext);
+  if (auth === null) {
+    throw redirect("/login");
+  }
+
+  const formData = await request.formData();
+  const key = formData.get("key")?.toString() ?? "";
+  const name = formData.get("name")?.toString() ?? "";
+  const description = formData.get("description")?.toString() ?? "";
+  const enabled = false;
+  const { projectId } = params;
+  const newFlagParams: NewFlagParams = {
+    projectId,
+    key,
+    name,
+    description,
+    enabled,
+  };
+
+  const result = await createFlagForProject(newFlagParams, auth);
 
   if (result.status === 401) {
     throw redirect("/login");
   }
 
   if (!result.ok) {
-    throw new Response("Failed to load project", { status: result.status });
+    throw new Response("Failed to create flag", { status: result.status });
   }
 
-  const flags: Flag[] = await result.json();
-  return flags.sort((a, b) =>
-    a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-  );
+  const createdFlag = await result.json();
+  return createdFlag as Flag;
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export async function clientAction({
+async function updateFlag({
+  context,
   params,
   request,
 }: Route.ClientActionArgs) {
-  await sleep(5000);
-  const token = getAuthToken();
-  if (token === null) {
+  const auth = context.get(authContext);
+  if (auth === null) {
     throw redirect("/login");
   }
 
   const formData = await request.formData();
   const flagId = formData.get("flagId")?.toString() ?? "";
-  const body: Record<string, unknown> = {};
+  const { projectId } = params;
+  const updateFlagParams: UpdateFlagParams = { flagId, projectId };
+
+  const descriptionEntry = formData.get("description");
+  if (descriptionEntry !== null) {
+    updateFlagParams.description = descriptionEntry.toString();
+  }
 
   const enabledEntry = formData.get("enabled");
   if (enabledEntry !== null) {
-    body.enabled = enabledEntry.toString() === "true";
+    updateFlagParams.enabled = enabledEntry.toString() === "true";
   }
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const result = await fetch(
-    `${API_BASE_URL}/api/projects/${params.projectId}/flags/${flagId}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  const result = await updateFlagForProject(updateFlagParams, auth);
 
   if (result.status === 401) {
     throw redirect("/login");
   }
 
   if (!result.ok) {
-    throw new Response("Failed to update project", { status: result.status });
+    throw new Response("Failed to update flag", { status: result.status });
   }
 
   const updatedFlag = await result.json();
   return updatedFlag as Flag;
 }
 
-export default function Project({ loaderData: flags }: Route.ComponentProps) {
+async function deleteFlag({
+  context,
+  params,
+  request,
+}: Route.ClientActionArgs) {
+  const auth = context.get(authContext);
+  if (auth === null) {
+    throw redirect("/login");
+  }
+
+  const formData = await request.formData();
+  const flagId = formData.get("flagId")?.toString() ?? "";
+  const { projectId } = params;
+  const flagParams: FlagParams = { flagId, projectId };
+
+  const result = await deleteFlagForProject(flagParams, auth);
+
+  if (result.status === 401) {
+    throw redirect("/login");
+  }
+
+  if (!result.ok) {
+    throw new Response("Failed to delete flag", { status: result.status });
+  }
+
+  const deletedFlag = await result.json();
+  return deletedFlag as Flag;
+}
+
+export async function clientAction(args: Route.ClientActionArgs) {
+  const auth = args.context.get(authContext);
+  if (auth === null) {
+    throw redirect("/login");
+  }
+
+  switch (args.request.method) {
+    case "POST":
+      return await createFlag(args);
+    case "PUT":
+      return await updateFlag(args);
+    case "DELETE":
+      return await deleteFlag(args);
+  }
+}
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+
+  return debounced;
+}
+
+export default function Project({ loaderData, params }: Route.ComponentProps) {
+  const { project, flags } = loaderData;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modal = searchParams.get("modal");
+  const initialFlagQuery = searchParams.get("q") ?? "";
+  const [flagQuery, setFlagQuery] = useState(initialFlagQuery);
+
+  const debouncedFlagQuery = useDebounce(flagQuery, 400);
+
+  useEffect(() => {
+    setSearchParams(
+      (prevSearchParams) => {
+        if (debouncedFlagQuery === "") {
+          prevSearchParams.delete("q");
+        } else {
+          prevSearchParams.set("q", debouncedFlagQuery);
+        }
+        return prevSearchParams;
+      },
+      { replace: true }
+    );
+  }, [debouncedFlagQuery, setSearchParams]);
+
+  const handleCreateFlagDialogOpenChange = (open: boolean) => {
+    setSearchParams(
+      (prevSearchParams) => {
+        if (open) {
+          prevSearchParams.set("modal", "create-flag");
+        } else {
+          prevSearchParams.delete("modal");
+        }
+        return prevSearchParams;
+      },
+      { replace: true }
+    );
+  };
+
+  const filteredFlags = flags.filter(({ name }) => name.includes(flagQuery));
+
   return (
     <main className="p-8">
       <TooltipProvider>
         <section className="mx-auto max-w-4xl">
+          <Link
+            to="/projects"
+            className="group relative mb-8 flex w-fit -translate-x-3 flex-row items-center gap-1.5 rounded-sm px-3 py-1.5 text-orange-600 hover:bg-orange-100/30"
+          >
+            <span className="translate-x-0 transition-transform will-change-transform group-hover:-translate-x-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+                stroke="currentColor"
+                className="size-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                />
+              </svg>
+            </span>
+            <span className="text-sm font-semibold">Back to Projects</span>
+          </Link>
           <h1 className="mb-8 text-4xl font-light tracking-tight text-gray-800">
-            Kaminel
+            {project.name}
           </h1>
           <div className="mb-4 flex flex-row items-center justify-between">
             <span className="relative">
               <input
                 className="w-sm rounded-sm border border-gray-300 px-3 py-1.5 pl-7 text-sm text-gray-800 placeholder:text-gray-400"
                 placeholder="Search for a flag"
+                value={flagQuery}
+                onChange={(e) => setFlagQuery(e.target.value)}
               />
               <span className="absolute top-1/2 left-2 -translate-y-1/2 text-gray-400">
                 <svg
@@ -127,25 +291,172 @@ export default function Project({ loaderData: flags }: Route.ComponentProps) {
                 </svg>
               </span>
             </span>
-            <button className="flex cursor-pointer flex-row items-center justify-center gap-1 rounded-sm bg-orange-500 px-3 py-1.5 text-sm text-white shadow-xs transition-all hover:bg-orange-400 hover:shadow-sm active:bg-orange-600">
-              <span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="size-4 translate-[0.5px]"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4.5v15m7.5-7.5h-15"
-                  />
-                </svg>
-              </span>
-              <span className="tracking-tight">New Flag</span>
-            </button>
+            <Dialog.Root
+              open={modal === "create-flag"}
+              onOpenChange={handleCreateFlagDialogOpenChange}
+            >
+              <Dialog.Trigger asChild>
+                <button className="flex cursor-pointer flex-row items-center justify-center gap-1 rounded-sm bg-orange-500 px-3 py-1.5 text-sm text-white shadow-xs transition-all hover:bg-orange-400 hover:shadow-sm active:bg-orange-600">
+                  <span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="size-4 translate-[0.5px]"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 4.5v15m7.5-7.5h-15"
+                      />
+                    </svg>
+                  </span>
+                  <span className="tracking-tight">New Flag</span>
+                </button>
+              </Dialog.Trigger>
+              <Dialog.Portal>
+                <Dialog.Overlay className="fixed top-0 right-0 bottom-0 left-0 grid place-items-center bg-gray-800/25 backdrop-blur-xs">
+                  <Dialog.Content className="max-w-lg rounded border-gray-300 bg-white shadow">
+                    <Form
+                      method="POST"
+                      action={`/projects/${params.projectId}`}
+                    >
+                      <div className="flex flex-row items-center justify-between border-b border-gray-300 p-4">
+                        <div>
+                          <Dialog.Title className="text-xl font-semibold tracking-tight text-gray-800">
+                            Create Flag
+                          </Dialog.Title>
+                        </div>
+                        <div>
+                          <Dialog.Close asChild>
+                            <button className="flex size-8 items-center justify-center rounded-full hover:bg-gray-200/40">
+                              <span className="text-gray-800">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={1.5}
+                                  stroke="currentColor"
+                                  className="size-6"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M6 18 18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </span>
+                            </button>
+                          </Dialog.Close>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-6 p-4">
+                        <div className="flex flex-col gap-2">
+                          <label
+                            htmlFor="name"
+                            className="tracking-tight text-gray-800"
+                          >
+                            Name
+                          </label>
+                          <Input
+                            id="name"
+                            name="name"
+                            type="text"
+                            placeholder="Name of the feature flag"
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label
+                            htmlFor="key"
+                            className="tracking-tight text-gray-800"
+                          >
+                            Key
+                          </label>
+                          <Input
+                            id="key"
+                            name="key"
+                            type="text"
+                            placeholder="Key for the feature flag"
+                            className="text-mono w-full"
+                          />
+                          <p className="text-xs text-gray-700">
+                            <ul className="list-outside list-disc pl-4">
+                              <li>
+                                The key must only contain lowercase alphabets
+                                (a-z), digits (0-9), hyphens (-), or underscores
+                                (_).
+                              </li>
+                              <li>
+                                The key must start with a lowercase alphabet.
+                              </li>
+                              <li>
+                                The key must not end with a hyphen (-) or
+                                underscore (_).
+                              </li>
+                            </ul>
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label
+                            htmlFor="description"
+                            className="tracking-tight text-gray-800"
+                          >
+                            Description
+                          </label>
+                          <textarea
+                            id="description"
+                            name="description"
+                            placeholder="A description for the feature flag"
+                            className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-row items-center justify-end gap-2 border-t border-gray-300 p-4">
+                        <Dialog.Close asChild>
+                          <button
+                            type="button"
+                            className="flex w-24 flex-row items-center justify-center gap-2 rounded px-4 py-2 font-medium tracking-tight text-orange-500 transition-colors not-disabled:hover:bg-orange-100/40 not-disabled:active:bg-orange-100/25 disabled:opacity-50"
+                          >
+                            <span>Cancel</span>
+                          </button>
+                        </Dialog.Close>
+                        <button
+                          type="submit"
+                          // disabled={isSubmitting}
+                          className="flex w-24 flex-row items-center justify-center gap-2 rounded bg-orange-500 px-4 py-2 font-medium tracking-tight text-white transition-colors not-disabled:hover:bg-orange-400 not-disabled:active:bg-orange-600 disabled:opacity-50"
+                        >
+                          {/* {isSubmitting ? (
+                <>
+                  <span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-5 animate-spin"
+                    >
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                  </span>
+                  <span>Logging in...</span>
+                </>
+              ) : (
+                <span>Login</span>
+              )} */}
+                          <span>Create</span>
+                        </button>
+                      </div>
+                    </Form>
+                  </Dialog.Content>
+                </Dialog.Overlay>
+              </Dialog.Portal>
+            </Dialog.Root>
           </div>
           <div className="overflow-x-auto rounded border border-gray-300">
             <table className="w-full table-fixed divide-y divide-gray-300">
@@ -166,7 +477,7 @@ export default function Project({ loaderData: flags }: Route.ComponentProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-300">
-                {flags.map((flag) => (
+                {filteredFlags.map((flag) => (
                   <FlagRecord key={flag.id} flag={flag} />
                 ))}
               </tbody>
@@ -184,7 +495,26 @@ function FlagRecord({ flag }: { flag: Flag }) {
   const handleCheckedChange = (checked: boolean) => {
     fetcher.submit(
       { flagId: flag.id, enabled: checked },
-      { action: `/projects/${flag.projectId}`, method: "POST" }
+      { action: `/projects/${flag.projectId}`, method: "PUT" }
+    );
+  };
+
+  const handleCopy = async () => {
+    const evaluateFlagApiEndpoint = withBase(
+      `/projects/${flag.projectId}/flags/${flag.key}/evaluate`
+    );
+    try {
+      await navigator.clipboard.writeText(evaluateFlagApiEndpoint);
+      alert(`Copied endpoint to clipboard: ${evaluateFlagApiEndpoint}`);
+    } catch (err) {
+      console.error("Failed to copy: ", err);
+    }
+  };
+
+  const handleDelete = () => {
+    fetcher.submit(
+      { flagId: flag.id },
+      { action: `/projects/${flag.projectId}`, method: "DELETE" }
     );
   };
 
@@ -195,7 +525,10 @@ function FlagRecord({ flag }: { flag: Flag }) {
       : flag.enabled;
 
   return (
-    <tr key={flag.name}>
+    <tr
+      data-deleted={fetcher.formMethod === "DELETE"}
+      className="data-[deleted=true]:animate-pulse"
+    >
       <td className="p-4">
         <div className="space-y-2">
           <div className="text-xl font-semibold tracking-tight text-gray-800">
@@ -208,7 +541,7 @@ function FlagRecord({ flag }: { flag: Flag }) {
       </td>
       <td className="p-4">
         <span className="rounded-sm bg-orange-100 px-1.5 py-0.5 font-mono text-sm font-semibold text-orange-700">
-          {flag.name}
+          {flag.key}
         </span>
       </td>
       <td className="p-4">
@@ -229,6 +562,7 @@ function FlagRecord({ flag }: { flag: Flag }) {
             action="Copy URL"
             variant="normal"
             disabled={fetcher.state === "submitting"}
+            onClick={handleCopy}
             defaultIcon={
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -255,40 +589,15 @@ function FlagRecord({ flag }: { flag: Flag }) {
               </svg>
             }
           />
-          <FlagActionButton
-            action="Edit"
-            variant="normal"
+          <FlagEditAction
             disabled={fetcher.state === "submitting"}
-            defaultIcon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                />
-              </svg>
-            }
-            hoverIcon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
-                <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
-              </svg>
-            }
+            flag={flag}
           />
           <FlagActionButton
             action="Delete"
             variant="danger"
             disabled={fetcher.state === "submitting"}
+            onClick={handleDelete}
             defaultIcon={
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -324,12 +633,214 @@ function FlagRecord({ flag }: { flag: Flag }) {
   );
 }
 
+function FlagEditAction({ flag, disabled }: { flag: Flag; disabled: boolean }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [name, setName] = useState(flag.name);
+  const [key, setKey] = useState(flag.key);
+  const [description, setDescription] = useState(flag.description);
+
+  const modal = searchParams.get("modal");
+  const flagIdForModal = searchParams.get("flag");
+
+  const handleEditFlagDialogOpenChange = (open: boolean) => {
+    setSearchParams(
+      (prevSearchParams) => {
+        if (open) {
+          prevSearchParams.set("modal", "edit-flag");
+          prevSearchParams.set("flag", flag.id.toString());
+        } else {
+          prevSearchParams.delete("modal");
+          prevSearchParams.delete("flag");
+        }
+        return prevSearchParams;
+      },
+      { replace: true }
+    );
+  };
+
+  const editModalOpen =
+    modal === "edit-flag" && flagIdForModal === flag.id.toString();
+
+  const editModalHasUpdates =
+    name !== flag.name || description !== flag.description;
+
+  return (
+    <Dialog.Root
+      open={editModalOpen}
+      onOpenChange={handleEditFlagDialogOpenChange}
+    >
+      <Dialog.Trigger asChild>
+        <FlagActionButton
+          action="Edit"
+          variant="normal"
+          disabled={disabled}
+          defaultIcon={
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+              />
+            </svg>
+          }
+          hoverIcon={
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+              <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+            </svg>
+          }
+        />
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed top-0 right-0 bottom-0 left-0 grid place-items-center bg-gray-800/25 backdrop-blur-xs">
+          <Dialog.Content className="rounded border-gray-300 bg-white shadow">
+            <Form method="PUT" action={`/projects/${flag.projectId}`}>
+              <div className="flex flex-row items-center justify-between border-b border-gray-300 p-4">
+                <div>
+                  <Dialog.Title className="text-xl font-semibold tracking-tight text-gray-800">
+                    Edit Flag
+                  </Dialog.Title>
+                </div>
+                <div>
+                  <Dialog.Close asChild>
+                    <button className="flex size-8 items-center justify-center rounded-full hover:bg-gray-200/40">
+                      <span className="text-gray-800">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="size-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18 18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </span>
+                    </button>
+                  </Dialog.Close>
+                </div>
+              </div>
+              <div className="flex flex-col gap-6 p-4">
+                <div className="hidden">
+                  <input type="hidden" name="flagId" value={flag.id} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="name"
+                    className="tracking-tight text-gray-800"
+                  >
+                    Name
+                  </label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    placeholder="Name of the feature flag"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={true}
+                    className="disabled:text-gray-400"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="key" className="tracking-tight text-gray-800">
+                    Key
+                  </label>
+                  <Input
+                    id="key"
+                    name="key"
+                    type="text"
+                    placeholder="Key of the feature flag"
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                    disabled={true}
+                    className="disabled:text-gray-400"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="description"
+                    className="tracking-tight text-gray-800"
+                  >
+                    Description
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    placeholder="A description for the feature flag"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-row items-center justify-end gap-2 border-t border-gray-300 p-4">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="flex w-24 flex-row items-center justify-center gap-2 rounded px-4 py-2 font-medium tracking-tight text-orange-500 transition-colors not-disabled:hover:bg-orange-100/40 not-disabled:active:bg-orange-100/25 disabled:opacity-50"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="submit"
+                  disabled={!editModalHasUpdates}
+                  className="flex w-24 flex-row items-center justify-center gap-2 rounded bg-orange-500 px-4 py-2 font-medium tracking-tight text-white transition-colors not-disabled:hover:bg-orange-400 not-disabled:active:bg-orange-600 disabled:opacity-50"
+                >
+                  {/* {isSubmitting ? (
+                <>
+                  <span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-5 animate-spin"
+                    >
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                  </span>
+                  <span>Logging in...</span>
+                </>
+              ) : (
+                <span>Login</span>
+              )} */}
+                  <span>Update</span>
+                </button>
+              </div>
+            </Form>
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 interface FlagActionButtonProps {
   action: string;
   disabled: boolean;
-  defaultIcon: React.ReactSVGElement;
-  hoverIcon: React.ReactSVGElement;
+  defaultIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
+  hoverIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
   variant: "normal" | "danger";
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 const variantStyles: Record<FlagActionButtonProps["variant"], string> = {
@@ -337,15 +848,9 @@ const variantStyles: Record<FlagActionButtonProps["variant"], string> = {
   danger: "text-red-500",
 };
 
-function FlagActionButton(props: {
-  action: string;
-  disabled: boolean;
-  defaultIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
-  hoverIcon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
-  variant: "normal" | "danger";
-}) {
+function FlagActionButton(props: FlagActionButtonProps) {
   const baseIconStyles = "absolute top-0 left-0 size-6";
-  const disabledIconStyles = "text-gray-400";
+  const disabledIconStyles = "text-gray-600";
   const defaultIconStyles =
     "text-gray-600 opacity-100 group-hover:opacity-0 transition-opacity";
   const hoverIconVisibilityStyles =
@@ -366,7 +871,10 @@ function FlagActionButton(props: {
     <span className="relative size-6 cursor-wait">{disabledIcon}</span>
   ) : (
     <Tooltip content={props.action}>
-      <button className="group flex cursor-pointer items-center justify-center">
+      <button
+        {...(props.onClick ? { onClick: props.onClick } : {})}
+        className="group flex cursor-pointer items-center justify-center"
+      >
         <span className="sr-only">{props.action}</span>
         <span className="relative size-6">
           {defaultIcon}

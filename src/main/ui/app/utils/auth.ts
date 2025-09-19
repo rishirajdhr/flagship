@@ -21,12 +21,12 @@ function getAuthUsername() {
   return username;
 }
 
-function login(token: string) {
+function setAuthToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);
 }
 
-function logout() {
+function removeAuthToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-export { getAuthToken, getAuthUsername, login, logout };
+export { getAuthToken, getAuthUsername, setAuthToken, removeAuthToken };

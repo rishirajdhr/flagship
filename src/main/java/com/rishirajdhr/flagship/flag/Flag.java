@@ -3,12 +3,16 @@ package com.rishirajdhr.flagship.flag;
 import com.rishirajdhr.flagship.project.Project;
 
 import java.time.Instant;
+import java.util.regex.Pattern;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -19,7 +23,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 */
 @Entity
 @EntityListeners(AuditingEntityListener.class)
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "key", "project_id" }))
 public class Flag {
+  private static final Pattern FLAG_KEY_PATTERN = Pattern.compile("^[a-z]+(?:[-_][a-z0-9]+)*$");
 
   @Id @GeneratedValue
   private Long id;
@@ -30,11 +36,14 @@ public class Flag {
   @LastModifiedDate
   private Instant updatedAt;
 
+  private String key;
+
   private String name;
   private String description;
   private boolean enabled;
 
   @ManyToOne
+  @JoinColumn(name = "project_id", referencedColumnName = "id", nullable = false)
   private Project project;
 
   /**
@@ -45,13 +54,15 @@ public class Flag {
   /**
    * Create a new feature flag.
    *
+   * @param key the key for the feature flag
    * @param name the name of the feature flag
    * @param description a plain-text description of the feature flag
    * @param enabled {@code true} if the flag should be enabled, {@code false} otherwise
    * @param project the project of the feature flag
    * @throws IllegalArgumentException if the flag name or description is invalid
    */
-  public Flag(String name, String description, boolean enabled, Project project) throws IllegalArgumentException {
+  public Flag(String key, String name, String description, boolean enabled, Project project) throws IllegalArgumentException {
+    this.key = validateKey(key);
     this.name = validateName(name);
     this.description = validateDescription(description);
     this.enabled = enabled;
@@ -95,6 +106,15 @@ public class Flag {
   }
 
   /**
+   * Get the key of the feature flag.
+   *
+   * @return the feature flag's key
+   */
+  public String getKey() {
+    return key;
+  }
+
+  /**
    * Get the name of the feature flag.
    *
    * @return the feature flag's name
@@ -119,6 +139,16 @@ public class Flag {
    */
   public boolean isEnabled() {
     return enabled;
+  }
+
+  /**
+   * Set the key of the feature flag.
+   *
+   * @param key the key to be set
+   * @throws IllegalArgumentException if the key is invalid
+   */
+  public void setKey(String key) throws IllegalArgumentException {
+    this.key = validateKey(key);
   }
 
   /**
@@ -187,5 +217,30 @@ public class Flag {
     }
 
     return description.strip();
+  }
+
+  /**
+   * Validate a feature flag key according to the following rules:
+   *
+   * <ul>
+   *   <li>The key must only contain lowercase alphabets (a-z), digits (0-9), hyphens (-), or underscores (_).</li>
+   *   <li>The key must start with a lowercase alphabet.</li>
+   *   <li>The key must not end with a hyphen (-) or underscore (_).</li>
+   * </ul>
+   *
+   * @param key the key to validate
+   * @return the validated key
+   * @throws IllegalArgumentException if the key is {@code null} or invalid
+   */
+  private String validateKey(String key) throws IllegalArgumentException {
+    if (key == null) {
+      throw new IllegalArgumentException("Key cannot be null");
+    }
+
+    if (!FLAG_KEY_PATTERN.matcher(key).matches()) {
+      throw new IllegalArgumentException("Key is not valid");
+    }
+
+    return key;
   }
 }

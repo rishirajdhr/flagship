@@ -56,10 +56,11 @@ public class FlagController {
    * @return the newly created flag
    */
   @PostMapping
-  public FlagResponse createProjectFlag(@PathVariable Long projectId, @RequestBody NewFlag newFlag) {
+  public FlagResponse createProjectFlag(@PathVariable Long projectId,
+                                        @RequestBody @Valid NewFlag newFlag) {
     Project project = getAuthorizedProject(projectId);
     Flag flag = flagService.createProjectFlag(
-        newFlag.name(), newFlag.description(), newFlag.enabled(), project);
+        newFlag.key(), newFlag.name(), newFlag.description(), newFlag.enabled(), project);
     return FlagResponse.fromFlag(flag);
   }
 
@@ -120,17 +121,17 @@ public class FlagController {
   }
 
   /**
-   * Evaluate the state of a feature flag for a project by its name.
+   * Evaluate the state of a feature flag for a project by its key.
    *
-   * @param flagName the name of the flag
+   * @param flagKey the key of the flag
    * @param projectId the ID of the project
    * @return the evaluated flag state
    */
-  @PostMapping("/{flagName}/evaluate")
-  public FlagState evaluateFlag(@PathVariable String flagName, @PathVariable Long projectId) {
+  @PostMapping("/{flagKey}/evaluate")
+  public FlagState evaluateFlag(@PathVariable String flagKey, @PathVariable Long projectId) {
     Project project = getAuthorizedProject(projectId);
-    Optional<Flag> result = flagService.getProjectFlagByName(flagName, project);
-    if (result.isEmpty()) throw new FlagNotFoundException(flagName);
+    Optional<Flag> result = flagService.getProjectFlagByKey(flagKey, project);
+    if (result.isEmpty()) throw new FlagNotFoundException(flagKey);
 
     Flag flag = result.get();
     return flagService.createFlagState(flag);

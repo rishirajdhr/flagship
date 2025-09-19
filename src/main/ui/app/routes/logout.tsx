@@ -1,8 +1,8 @@
 import { redirect } from "react-router";
-import { logout } from "~/components/auth";
+import { removeAuthToken } from "~/utils/auth";
 
 export async function clientAction() {
-  logout();
+  removeAuthToken();
   throw redirect("/");
 }
 

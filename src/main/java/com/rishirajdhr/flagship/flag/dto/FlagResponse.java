@@ -8,6 +8,7 @@ import java.time.Instant;
  * Represents the data for a flag sent in a response to a flag request.
  *
  * @param id the flag ID
+ * @param key the flag key
  * @param name the flag name
  * @param description the flag description
  * @param enabled the flag status - {@code true} if the flag is enabled, false otherwise
@@ -18,6 +19,7 @@ import java.time.Instant;
  */
 public record FlagResponse(
     Long id,
+    String key,
     String name,
     String description,
     boolean enabled,
@@ -34,6 +36,7 @@ public record FlagResponse(
   public static FlagResponse fromFlag(Flag flag) {
     return new FlagResponse(
         flag.getId(),
+        flag.getKey(),
         flag.getName(),
         flag.getDescription(),
         flag.isEnabled(),
