@@ -20,7 +20,7 @@ export interface UpdateFlagParams
     Partial<Pick<Flag, "description" | "enabled">> {}
 
 export interface NewFlagParams
-  extends Pick<Flag, "name" | "description" | "enabled"> {
+  extends Pick<Flag, "key" | "name" | "description" | "enabled"> {
   projectId: string;
 }
 

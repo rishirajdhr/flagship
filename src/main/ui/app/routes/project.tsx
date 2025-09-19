@@ -24,6 +24,7 @@ import { authContext } from "~/middleware-context";
 import type { Flag, Project } from "~/types";
 import { getProject } from "~/api/projects";
 import { withBase } from "~/api/base";
+import { Input } from "~/components/ui/input";
 
 export async function clientLoader({
   context,
@@ -75,12 +76,14 @@ async function createFlag({
   }
 
   const formData = await request.formData();
+  const key = formData.get("key")?.toString() ?? "";
   const name = formData.get("name")?.toString() ?? "";
   const description = formData.get("description")?.toString() ?? "";
   const enabled = false;
   const { projectId } = params;
   const newFlagParams: NewFlagParams = {
     projectId,
+    key,
     name,
     description,
     enabled,
@@ -315,7 +318,7 @@ export default function Project({ loaderData, params }: Route.ComponentProps) {
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay className="fixed top-0 right-0 bottom-0 left-0 grid place-items-center bg-gray-800/25 backdrop-blur-xs">
-                  <Dialog.Content className="rounded border-gray-300 bg-white shadow">
+                  <Dialog.Content className="max-w-lg rounded border-gray-300 bg-white shadow">
                     <Form
                       method="POST"
                       action={`/projects/${params.projectId}`}
@@ -357,13 +360,44 @@ export default function Project({ loaderData, params }: Route.ComponentProps) {
                           >
                             Name
                           </label>
-                          <input
+                          <Input
                             id="name"
                             name="name"
                             type="text"
                             placeholder="Name of the feature flag"
-                            className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
+                            className="w-full"
                           />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label
+                            htmlFor="key"
+                            className="tracking-tight text-gray-800"
+                          >
+                            Key
+                          </label>
+                          <Input
+                            id="key"
+                            name="key"
+                            type="text"
+                            placeholder="Key for the feature flag"
+                            className="text-mono w-full"
+                          />
+                          <p className="text-xs text-gray-700">
+                            <ul className="list-outside list-disc pl-4">
+                              <li>
+                                The key must only contain lowercase alphabets
+                                (a-z), digits (0-9), hyphens (-), or underscores
+                                (_).
+                              </li>
+                              <li>
+                                The key must start with a lowercase alphabet.
+                              </li>
+                              <li>
+                                The key must not end with a hyphen (-) or
+                                underscore (_).
+                              </li>
+                            </ul>
+                          </p>
                         </div>
                         <div className="flex flex-col gap-2">
                           <label
@@ -376,7 +410,7 @@ export default function Project({ loaderData, params }: Route.ComponentProps) {
                             id="description"
                             name="description"
                             placeholder="A description for the feature flag"
-                            className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
+                            className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
                           />
                         </div>
                       </div>
@@ -467,7 +501,7 @@ function FlagRecord({ flag }: { flag: Flag }) {
 
   const handleCopy = async () => {
     const evaluateFlagApiEndpoint = withBase(
-      `/projects/${flag.projectId}/flags/${flag.name}/evaluate`
+      `/projects/${flag.projectId}/flags/${flag.key}/evaluate`
     );
     try {
       await navigator.clipboard.writeText(evaluateFlagApiEndpoint);
@@ -507,7 +541,7 @@ function FlagRecord({ flag }: { flag: Flag }) {
       </td>
       <td className="p-4">
         <span className="rounded-sm bg-orange-100 px-1.5 py-0.5 font-mono text-sm font-semibold text-orange-700">
-          {flag.name}
+          {flag.key}
         </span>
       </td>
       <td className="p-4">
@@ -602,6 +636,7 @@ function FlagRecord({ flag }: { flag: Flag }) {
 function FlagEditAction({ flag, disabled }: { flag: Flag; disabled: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [name, setName] = useState(flag.name);
+  const [key, setKey] = useState(flag.key);
   const [description, setDescription] = useState(flag.description);
 
   const modal = searchParams.get("modal");
@@ -710,14 +745,30 @@ function FlagEditAction({ flag, disabled }: { flag: Flag; disabled: boolean }) {
                   >
                     Name
                   </label>
-                  <input
+                  <Input
                     id="name"
                     name="name"
                     type="text"
                     placeholder="Name of the feature flag"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-80 rounded border border-gray-300 px-3 py-1.5 text-sm tracking-tight text-gray-800"
+                    disabled={true}
+                    className="disabled:text-gray-400"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="key" className="tracking-tight text-gray-800">
+                    Key
+                  </label>
+                  <Input
+                    id="key"
+                    name="key"
+                    type="text"
+                    placeholder="Key of the feature flag"
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                    disabled={true}
+                    className="disabled:text-gray-400"
                   />
                 </div>
                 <div className="flex flex-col gap-2">

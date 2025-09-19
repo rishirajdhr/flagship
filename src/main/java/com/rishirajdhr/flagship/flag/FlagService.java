@@ -27,14 +27,16 @@ public class FlagService {
   /**
    * Create a new feature flag for a project.
    *
+   * @param key the key of the feature flag
    * @param name the name of the feature flag
    * @param description the description of the feature flag
    * @param enabled the feature flag status - {@code} true if enabled, {@code false} otherwise
    * @param project the project to create the flag for
    * @return the newly created feature flag
    */
-  public Flag createProjectFlag(String name, String description, boolean enabled, Project project) {
-    Flag flag = new Flag(name, description, enabled, project);
+  public Flag createProjectFlag(String key, String name, String description, boolean enabled,
+                                Project project) {
+    Flag flag = new Flag(key, name, description, enabled, project);
     return flagRepository.save(flag);
   }
 
@@ -49,14 +51,14 @@ public class FlagService {
   }
 
   /**
-   * Get a feature flag for a project by its name.
+   * Get a feature flag for a project by its key.
    *
-   * @param flagName the name of the flag
+   * @param key the key of the flag
    * @param project the project of the flag
    * @return an {@link Optional} containing the flag if it exists
    */
-  public Optional<Flag> getProjectFlagByName(String flagName, Project project) {
-    return flagRepository.findFlagByNameAndProject(flagName, project);
+  public Optional<Flag> getProjectFlagByKey(String key, Project project) {
+    return flagRepository.findFlagByKeyAndProject(key, project);
   }
 
   /**

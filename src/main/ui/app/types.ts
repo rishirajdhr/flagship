@@ -5,6 +5,7 @@ export type Auth = {
 
 export type Flag = {
   id: number;
+  key: string;
   name: string;
   description: string;
   enabled: boolean;

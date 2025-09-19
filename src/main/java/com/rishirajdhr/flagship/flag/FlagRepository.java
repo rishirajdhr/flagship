@@ -13,13 +13,13 @@ import java.util.Optional;
 public interface FlagRepository extends JpaRepository<Flag, Long> {
 
   /**
-   * Get a feature flag within a project by its name.
+   * Get a feature flag within a project by its key.
    *
-   * @param name the name of the flag
+   * @param key the key of the flag
    * @param project the project of the flag
    * @return an {@link Optional} containing the flag if found
    */
-  Optional<Flag> findFlagByNameAndProject(String name, Project project);
+  Optional<Flag> findFlagByKeyAndProject(String key, Project project);
 
   /**
    * Get a feature flag within a project by its ID.
