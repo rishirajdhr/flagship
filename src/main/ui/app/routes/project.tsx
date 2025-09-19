@@ -23,6 +23,7 @@ import {
 import { authContext } from "~/middleware-context";
 import type { Flag, Project } from "~/types";
 import { getProject } from "~/api/projects";
+import { withBase } from "~/api/base";
 
 export async function clientLoader({
   context,
@@ -431,6 +432,18 @@ function FlagRecord({ flag }: { flag: Flag }) {
     );
   };
 
+  const handleCopy = async () => {
+    const evaluateFlagApiEndpoint = withBase(
+      `/projects/${flag.projectId}/flags/${flag.name}/evaluate`
+    );
+    try {
+      await navigator.clipboard.writeText(evaluateFlagApiEndpoint);
+      alert(`Copied endpoint to clipboard: ${evaluateFlagApiEndpoint}`);
+    } catch (err) {
+      console.error("Failed to copy: ", err);
+    }
+  };
+
   const handleDelete = () => {
     fetcher.submit(
       { flagId: flag.id },
@@ -482,9 +495,7 @@ function FlagRecord({ flag }: { flag: Flag }) {
             action="Copy URL"
             variant="normal"
             disabled={fetcher.state === "submitting"}
-            onClick={() => {
-              return;
-            }}
+            onClick={handleCopy}
             defaultIcon={
               <svg
                 xmlns="http://www.w3.org/2000/svg"
