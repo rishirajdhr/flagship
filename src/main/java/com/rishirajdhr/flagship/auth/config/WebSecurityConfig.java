@@ -1,5 +1,6 @@
 package com.rishirajdhr.flagship.auth.config;
 
+import com.rishirajdhr.flagship.auth.AuthEntryPoint;
 import com.rishirajdhr.flagship.auth.jwt.JWTFilter;
 
 import org.springframework.context.annotation.Bean;
@@ -14,33 +15,38 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Configures Spring Security options for Web security.
- */
+/** Configures Spring Security options for Web security. */
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
+  private final AuthEntryPoint authEntryPoint;
   private final JWTFilter jwtFilter;
 
   /**
    * Create a web security configuration for the application.
    *
+   * @param authEntryPoint the authentication entry point to use for handling authentication errors
    * @param jwtFilter the JWT-based filter to use for authenticating incoming HTTP requests
    */
-  public WebSecurityConfig(JWTFilter jwtFilter) {
+  public WebSecurityConfig(AuthEntryPoint authEntryPoint, JWTFilter jwtFilter) {
+    this.authEntryPoint = authEntryPoint;
     this.jwtFilter = jwtFilter;
   }
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .csrf((csrf) -> csrf.disable())
+    http.csrf((csrf) -> csrf.disable())
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .authorizeHttpRequests(
-            (authorize) -> authorize
-                .requestMatchers("/api/login", "/api/signup").permitAll()
-                .anyRequest().authenticated())
-        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            (authorize) ->
+                authorize
+                    .requestMatchers("/api/login", "/api/signup")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+        .exceptionHandling(
+            exceptionHandling -> exceptionHandling.authenticationEntryPoint(authEntryPoint));
 
     return http.build();
   }

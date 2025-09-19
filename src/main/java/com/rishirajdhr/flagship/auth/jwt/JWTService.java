@@ -1,16 +1,17 @@
 package com.rishirajdhr.flagship.auth.jwt;
 
+import com.rishirajdhr.flagship.auth.exceptions.UnauthenticatedException;
+
 import java.util.Date;
 import javax.crypto.SecretKey;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-/**
- * Provides utilities to work with JSON Web Tokens (JWTs) for authorization.
- */
+/** Provides utilities to work with JSON Web Tokens (JWTs) for authorization. */
 @Service
 public class JWTService {
   private final SecretKey secretKey = Jwts.SIG.HS256.key().build();
@@ -37,7 +38,7 @@ public class JWTService {
    * @param token the JWT containing the username
    * @return the username if found, {@code null} otherwise
    */
-  public String extractUsername(String token) {
+  public String extractUsername(String token) throws UnauthenticatedException {
     return parseToken(token).getSubject();
   }
 
@@ -48,7 +49,8 @@ public class JWTService {
    * @param userDetails the user details of the application user
    * @return {@code true} if the JWT is valid for the given user, {@code false} otherwise
    */
-  public boolean validateToken(String token, UserDetails userDetails) {
+  public boolean validateToken(String token, UserDetails userDetails)
+      throws UnauthenticatedException {
     Claims claims = parseToken(token);
     boolean isUserValid = claims.getSubject().equals(userDetails.getUsername());
     boolean isExpired = claims.getExpiration().before(new Date());
@@ -61,7 +63,11 @@ public class JWTService {
    * @param token the token to parse
    * @return the decoded JWT payload
    */
-  private Claims parseToken(String token) {
-    return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+  private Claims parseToken(String token) throws UnauthenticatedException {
+    try {
+      return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+    } catch (JwtException e) {
+      throw new UnauthenticatedException();
+    }
   }
 }
